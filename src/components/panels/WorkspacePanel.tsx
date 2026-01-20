@@ -9,7 +9,7 @@ import { Badge } from '../common/Badge';
 import { ProgressBar } from '../common/ProgressBar';
 import { WORKSPACE_EMOJIS } from '../../utils/emoji';
 import { AGENT_EMOJIS } from '../../utils/emoji';
-import { AVAILABLE_MODELS, ModelId } from '../../types/workspace';
+import { AVAILABLE_MODELS, ModelId, CliType } from '../../types/workspace';
 
 const WORKFLOW_SECTION_STYLE = "mb-5 p-4 bg-gray-800/50 rounded-lg border border-gray-700";
 
@@ -20,6 +20,8 @@ export function WorkspacePanel() {
     renameWorkspace,
     setSystemPrompt,
     setModel,
+    setCli,
+    setMode,
     setTaskTemplate,
     setAutoRun,
     connectWorkspaces,
@@ -113,7 +115,39 @@ export function WorkspacePanel() {
         </p>
       </div>
 
-      {/* Model Selection */}
+      {/* CLI & Model */}
+      <div className="mb-5">
+        <label className="block text-sm font-medium text-gray-400 mb-2">
+          CLI
+        </label>
+        <select
+          value={workspace.cli ?? 'claude'}
+          onChange={(e) => setCli(workspace.id, e.target.value as CliType)}
+          className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-base text-white focus:border-blue-500 focus:outline-none"
+        >
+          <option value="claude">Claude (claude)</option>
+          <option value="cursor">Cursor Agent (agent)</option>
+        </select>
+      </div>
+
+      {(workspace.cli ?? 'claude') === 'cursor' && (
+        <div className="mb-5">
+          <label className="block text-sm font-medium text-gray-400 mb-2">
+            Cursor mode
+          </label>
+          <select
+            value={workspace.mode ?? 'agent'}
+            onChange={(e) => setMode(workspace.id, e.target.value || null)}
+            className="w-full bg-gray-800 border border-gray-700 rounded px-4 py-3 text-base text-white focus:border-blue-500 focus:outline-none"
+          >
+            <option value="agent">Agent (default)</option>
+            <option value="plan">Plan</option>
+            <option value="ask">Ask</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">Agent: full tools. Plan: design first. Ask: read-only.</p>
+        </div>
+      )}
+
       <div className="mb-5">
         <label className="block text-sm font-medium text-gray-400 mb-2">
           Model

@@ -12,7 +12,7 @@ export function TaskInput() {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { selectedWorkspaceId, cliAvailable } = useUIStore();
+  const { selectedWorkspaceId, cliAvailable, cursorCliAvailable } = useUIStore();
   const workspaces = useWorkspacesStore((s) => s.workspaces);
   const agents = useAgentsStore((s) => s.agents);
   const { skills, loadSkills } = useSkillsStore();
@@ -67,11 +67,17 @@ export function TaskInput() {
 
   return (
     <div className="p-4 border-t border-canvas-border bg-gray-900/50">
-      {!cliAvailable && cliAvailable !== null && (
-        <div className="mb-3 p-3 bg-red-900/30 border border-red-700 rounded text-sm text-red-300">
-          Claude CLI not found. Install it first.
-        </div>
-      )}
+      {selectedWorkspaceId && (() => {
+        const useCursor = workspace?.cli === 'cursor';
+        const ok = useCursor ? cursorCliAvailable : cliAvailable;
+        if (ok !== false || (cliAvailable === null && cursorCliAvailable === null)) return null;
+        return (
+          <div className="mb-3 p-3 bg-red-900/30 border border-red-700 rounded text-sm text-red-300">
+            {useCursor ? 'Cursor CLI (agent) not found. ' : 'Claude CLI not found. '}
+            {useCursor ? 'Install: curl https://cursor.com/install -fsS | bash' : 'Install it first.'}
+          </div>
+        );
+      })()}
 
       {!selectedWorkspaceId ? (
         <p className="text-sm text-gray-500 text-center py-3">
@@ -143,7 +149,11 @@ export function TaskInput() {
             </span>
             <Button
               type="submit"
-              disabled={!prompt.trim() || isSubmitting || !cliAvailable}
+              disabled={
+                !prompt.trim() ||
+                isSubmitting ||
+                (workspace?.cli === 'cursor' ? !cursorCliAvailable : !cliAvailable)
+              }
               size="sm"
             >
               {isSubmitting ? 'Starting...' : 'Run Task'}

@@ -19,6 +19,7 @@ interface UIState {
   sidebarCollapsed: boolean;
   statusMessage: string;
   cliAvailable: boolean | null;
+  cursorCliAvailable: boolean | null;
   outputModalAgentId: string | null;
   editingWorkspaceId: string | null; // For inline name editing
   wiring: WiringState;
@@ -29,6 +30,7 @@ interface UIState {
   toggleSidebar: () => void;
   setStatusMessage: (message: string) => void;
   setCliAvailable: (available: boolean) => void;
+  setCursorCliAvailable: (available: boolean) => void;
   showOutputModal: (agentId: string | null) => void;
   setEditingWorkspace: (workspaceId: string | null) => void;
   startWiring: (workspaceId: string, type: 'input' | 'output', x: number, y: number) => void;
@@ -44,6 +46,7 @@ export const useUIStore = create<UIState>()(
     sidebarCollapsed: false,
     statusMessage: 'Ready',
     cliAvailable: null,
+    cursorCliAvailable: null,
     outputModalAgentId: null,
     editingWorkspaceId: null,
     wiring: {
@@ -93,6 +96,12 @@ export const useUIStore = create<UIState>()(
     setCliAvailable: (available: boolean) => {
       set((state) => {
         state.cliAvailable = available;
+      });
+    },
+
+    setCursorCliAvailable: (available: boolean) => {
+      set((state) => {
+        state.cursorCliAvailable = available;
       });
     },
 
