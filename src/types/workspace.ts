@@ -2,6 +2,9 @@ export type WorkspaceState = 'empty' | 'occupied' | 'working' | 'success' | 'err
 
 export type ModelId = 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514' | 'claude-3-5-haiku-20241022';
 
+/** CLI backend: `claude` or `cursor` (Cursor Agent). */
+export type CliType = 'claude' | 'cursor';
+
 export interface WorkspaceConnection {
   fromId: string;      // Source workspace ID
   toId: string;        // Target workspace ID
@@ -21,6 +24,10 @@ export interface Workspace {
   createdAt: number;
   systemPrompt: string | null;
   model: ModelId;
+  /** `claude` (default) or `cursor`. */
+  cli?: CliType;
+  /** Cursor-only: `agent`, `plan`, or `ask`. */
+  mode?: string;
 
   // Workflow features
   taskTemplate: string | null;      // Pre-defined task prompt for this workspace

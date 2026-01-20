@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { nanoid } from 'nanoid';
-import type { Workspace, WorkspaceState, DrawingState, ModelId } from '../types/workspace';
+import type { Workspace, WorkspaceState, DrawingState, ModelId, CliType } from '../types/workspace';
 import { MIN_WORKSPACE_SIZE } from '../types/workspace';
 
 interface WorkspacesState {
   workspaces: Record<string, Workspace>;
   drawing: DrawingState;
 
-  addWorkspace: (workspace: Omit<Workspace, 'id' | 'createdAt' | 'taskTemplate' | 'lastOutput' | 'inputConnections' | 'outputConnections' | 'autoRun'>) => string;
+  addWorkspace: (workspace: Omit<Workspace, 'id' | 'createdAt' | 'taskTemplate' | 'lastOutput' | 'inputConnections' | 'outputConnections' | 'autoRun' | 'cli' | 'mode'>) => string;
   removeWorkspace: (workspaceId: string) => void;
   updateWorkspaceState: (workspaceId: string, state: WorkspaceState) => void;
   setWorkspaceAgent: (workspaceId: string, agentId: string | null) => void;
@@ -17,6 +17,8 @@ interface WorkspacesState {
   renameWorkspace: (workspaceId: string, name: string) => void;
   setSystemPrompt: (workspaceId: string, prompt: string | null) => void;
   setModel: (workspaceId: string, model: ModelId) => void;
+  setCli: (workspaceId: string, cli: CliType) => void;
+  setMode: (workspaceId: string, mode: string | null) => void;
 
   // Workflow methods
   setTaskTemplate: (workspaceId: string, template: string | null) => void;
@@ -55,6 +57,8 @@ export const useWorkspacesStore = create<WorkspacesState>()(
           createdAt: Date.now(),
           systemPrompt: workspace.systemPrompt ?? null,
           model: workspace.model ?? 'claude-sonnet-4-20250514',
+          cli: 'claude',
+          mode: undefined,
           // Workflow defaults
           taskTemplate: null,
           lastOutput: null,
@@ -131,6 +135,22 @@ export const useWorkspacesStore = create<WorkspacesState>()(
       set((state) => {
         if (state.workspaces[workspaceId]) {
           state.workspaces[workspaceId].model = model;
+        }
+      });
+    },
+
+    setCli: (workspaceId: string, cli: CliType) => {
+      set((state) => {
+        if (state.workspaces[workspaceId]) {
+          state.workspaces[workspaceId].cli = cli;
+        }
+      });
+    },
+
+    setMode: (workspaceId: string, mode: string | null) => {
+      set((state) => {
+        if (state.workspaces[workspaceId]) {
+          state.workspaces[workspaceId].mode = mode ?? undefined;
         }
       });
     },
