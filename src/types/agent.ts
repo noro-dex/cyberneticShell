@@ -31,9 +31,16 @@ export interface LogEntry {
   toolInput?: Record<string, unknown>;
 }
 
+/** CLI backend: `claude` (default) or `cursor` (Cursor Agent CLI). */
+export type CliType = 'claude' | 'cursor';
+
 export interface AgentConfig {
   workspaceId: string;
   prompt: string;
+  /** `claude` (default) or `cursor`. See https://cursor.com/docs/cli/overview */
+  cli?: CliType;
+  /** Cursor-only: `agent`, `plan`, or `ask`. Ignored for Claude. */
+  mode?: string;
   allowedTools?: string[];
   workingDirectory?: string;
   systemPrompt?: string;

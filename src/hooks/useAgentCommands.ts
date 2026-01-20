@@ -43,7 +43,11 @@ export function useAgentCommands() {
   );
 
   const startTask = useCallback(
-    async (workspaceId: string, prompt: string, options?: { allowedTools?: string[]; useWorkflowInputs?: boolean }) => {
+    async (
+      workspaceId: string,
+      prompt: string,
+      options?: { allowedTools?: string[]; useWorkflowInputs?: boolean; cli?: 'claude' | 'cursor'; mode?: string }
+    ) => {
       try {
         // Check if there's an existing agent for this workspace
         const existingAgent = getAgentByWorkspace(workspaceId);
@@ -67,6 +71,8 @@ export function useAgentCommands() {
         const config: AgentConfig = {
           workspaceId,
           prompt: finalPrompt,
+          cli: options?.cli,
+          mode: options?.mode,
           allowedTools: options?.allowedTools,
           systemPrompt: workspace?.systemPrompt || undefined,
           model: workspace?.model || undefined,
@@ -180,11 +186,20 @@ export function useAgentCommands() {
     }
   }, []);
 
+  const checkCursorCliAvailable = useCallback(async (): Promise<boolean> => {
+    try {
+      return await invoke<boolean>('check_cursor_cli_available');
+    } catch {
+      return false;
+    }
+  }, []);
+
   return {
     startTask,
     startWorkflowTask,
     stopTask,
     deleteWorkspace,
     checkCliAvailable,
+    checkCursorCliAvailable,
   };
 }
