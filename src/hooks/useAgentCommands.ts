@@ -71,8 +71,8 @@ export function useAgentCommands() {
         const config: AgentConfig = {
           workspaceId,
           prompt: finalPrompt,
-          cli: options?.cli,
-          mode: options?.mode,
+          cli: options?.cli ?? workspace?.cli,
+          mode: options?.mode ?? workspace?.mode,
           allowedTools: options?.allowedTools,
           systemPrompt: workspace?.systemPrompt || undefined,
           model: workspace?.model || undefined,
