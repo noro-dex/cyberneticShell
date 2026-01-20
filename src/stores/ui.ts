@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 
-export type ActivePanel = 'list' | 'workspace' | 'agent' | 'logs';
+export type ActivePanel = 'list' | 'workspace' | 'agent' | 'skills' | 'logs';
+
+// Wiring state for drag-to-connect
+interface WiringState {
+  isWiring: boolean;
+  fromWorkspaceId: string | null;
+  fromType: 'input' | 'output' | null;
+  mouseX: number;
+  mouseY: number;
+}
 
 interface UIState {
   selectedWorkspaceId: string | null;
@@ -11,6 +20,8 @@ interface UIState {
   statusMessage: string;
   cliAvailable: boolean | null;
   outputModalAgentId: string | null;
+  editingWorkspaceId: string | null; // For inline name editing
+  wiring: WiringState;
 
   selectWorkspace: (workspaceId: string | null) => void;
   selectAgent: (agentId: string | null) => void;
@@ -19,6 +30,10 @@ interface UIState {
   setStatusMessage: (message: string) => void;
   setCliAvailable: (available: boolean) => void;
   showOutputModal: (agentId: string | null) => void;
+  setEditingWorkspace: (workspaceId: string | null) => void;
+  startWiring: (workspaceId: string, type: 'input' | 'output', x: number, y: number) => void;
+  updateWiring: (x: number, y: number) => void;
+  endWiring: () => void;
 }
 
 export const useUIStore = create<UIState>()(
@@ -30,6 +45,14 @@ export const useUIStore = create<UIState>()(
     statusMessage: 'Ready',
     cliAvailable: null,
     outputModalAgentId: null,
+    editingWorkspaceId: null,
+    wiring: {
+      isWiring: false,
+      fromWorkspaceId: null,
+      fromType: null,
+      mouseX: 0,
+      mouseY: 0,
+    },
 
     selectWorkspace: (workspaceId: string | null) => {
       set((state) => {
@@ -76,6 +99,45 @@ export const useUIStore = create<UIState>()(
     showOutputModal: (agentId: string | null) => {
       set((state) => {
         state.outputModalAgentId = agentId;
+      });
+    },
+
+    setEditingWorkspace: (workspaceId: string | null) => {
+      set((state) => {
+        state.editingWorkspaceId = workspaceId;
+      });
+    },
+
+    startWiring: (workspaceId: string, type: 'input' | 'output', x: number, y: number) => {
+      set((state) => {
+        state.wiring = {
+          isWiring: true,
+          fromWorkspaceId: workspaceId,
+          fromType: type,
+          mouseX: x,
+          mouseY: y,
+        };
+      });
+    },
+
+    updateWiring: (x: number, y: number) => {
+      set((state) => {
+        if (state.wiring.isWiring) {
+          state.wiring.mouseX = x;
+          state.wiring.mouseY = y;
+        }
+      });
+    },
+
+    endWiring: () => {
+      set((state) => {
+        state.wiring = {
+          isWiring: false,
+          fromWorkspaceId: null,
+          fromType: null,
+          mouseX: 0,
+          mouseY: 0,
+        };
       });
     },
   }))

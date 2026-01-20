@@ -1,22 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useUIStore } from '../../stores/ui';
 import { useWorkspacesStore } from '../../stores/workspaces';
 import { useAgentsStore } from '../../stores/agents';
+import { useSkillsStore } from '../../stores/skills';
 import { useAgentCommands } from '../../hooks/useAgentCommands';
 import { Button } from '../common/Button';
 
 export function TaskInput() {
   const [prompt, setPrompt] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { selectedWorkspaceId, cliAvailable } = useUIStore();
   const workspaces = useWorkspacesStore((s) => s.workspaces);
   const agents = useAgentsStore((s) => s.agents);
+  const { skills, loadSkills } = useSkillsStore();
   const { startTask, stopTask } = useAgentCommands();
 
   const workspace = selectedWorkspaceId ? workspaces[selectedWorkspaceId] : null;
   const agent = workspace?.agentId ? agents[workspace.agentId] : null;
   const isAgentBusy = agent && !['idle', 'success', 'error'].includes(agent.state);
+
+  // Load skills on mount
+  useEffect(() => {
+    loadSkills();
+  }, [loadSkills]);
+
+  // Autofocus the textarea when workspace is selected or app loads
+  useEffect(() => {
+    if (selectedWorkspaceId && textareaRef.current && !isAgentBusy) {
+      textareaRef.current.focus();
+    }
+  }, [selectedWorkspaceId, isAgentBusy]);
+
+  // Also focus on initial mount
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,8 +47,14 @@ export function TaskInput() {
 
     setIsSubmitting(true);
     try {
-      await startTask(selectedWorkspaceId, prompt.trim());
+      // If a skill is selected, prefix the prompt with the skill command
+      const finalPrompt = selectedSkill
+        ? `/${selectedSkill} ${prompt.trim()}`
+        : prompt.trim();
+
+      await startTask(selectedWorkspaceId, finalPrompt);
       setPrompt('');
+      setSelectedSkill(null);
     } finally {
       setIsSubmitting(false);
     }
@@ -37,22 +66,22 @@ export function TaskInput() {
   };
 
   return (
-    <div className="p-3 border-t border-canvas-border bg-gray-900/50">
+    <div className="p-4 border-t border-canvas-border bg-gray-900/50">
       {!cliAvailable && cliAvailable !== null && (
-        <div className="mb-2 p-2 bg-red-900/30 border border-red-700 rounded text-xs text-red-300">
+        <div className="mb-3 p-3 bg-red-900/30 border border-red-700 rounded text-sm text-red-300">
           Claude CLI not found. Install it first.
         </div>
       )}
 
       {!selectedWorkspaceId ? (
-        <p className="text-xs text-gray-500 text-center py-2">
+        <p className="text-sm text-gray-500 text-center py-3">
           Select a workspace to assign a task
         </p>
       ) : isAgentBusy ? (
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-3">
           <div className="flex-1">
-            <p className="text-xs text-gray-400 mb-1">Agent is working...</p>
-            <p className="text-xs text-gray-300 truncate">{agent?.task}</p>
+            <p className="text-sm text-gray-400 mb-1">Agent is working...</p>
+            <p className="text-sm text-gray-300 truncate">{agent?.task}</p>
           </div>
           <Button variant="danger" size="sm" onClick={handleStop}>
             Stop
@@ -60,15 +89,42 @@ export function TaskInput() {
         </div>
       ) : (
         <form onSubmit={handleSubmit}>
+          {/* Skill selector */}
+          {skills.length > 0 && (
+            <div className="mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-400">Skill:</span>
+                <select
+                  value={selectedSkill || ''}
+                  onChange={(e) => setSelectedSkill(e.target.value || null)}
+                  className="flex-1 bg-gray-800 border border-gray-700 rounded px-3 py-2 text-sm text-white focus:border-blue-500 focus:outline-none"
+                >
+                  <option value="">None (direct prompt)</option>
+                  {skills.map((skill) => (
+                    <option key={skill.name} value={skill.name}>
+                      🔧 {skill.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {selectedSkill && (
+                <p className="text-xs text-blue-400 mt-1">
+                  Will run: /{selectedSkill} [your prompt]
+                </p>
+              )}
+            </div>
+          )}
+
           <div className="flex space-x-2">
             <textarea
+              ref={textareaRef}
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
-              placeholder="Enter a task for Claude..."
+              placeholder={selectedSkill ? `Enter arguments for /${selectedSkill}...` : 'Enter a task for Claude...'}
               className="
-                flex-1 px-3 py-2 min-h-[60px] max-h-[120px]
+                flex-1 px-4 py-3 min-h-[80px] max-h-[150px]
                 bg-gray-800 border border-gray-700 rounded
-                text-gray-100 text-sm
+                text-gray-100 text-base
                 placeholder-gray-500
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
                 resize-y
@@ -78,10 +134,11 @@ export function TaskInput() {
                   handleSubmit(e);
                 }
               }}
+              autoFocus
             />
           </div>
-          <div className="flex justify-between items-center mt-2">
-            <span className="text-xs text-gray-500">
+          <div className="flex justify-between items-center mt-3">
+            <span className="text-sm text-gray-500">
               {prompt.length > 0 ? `${prompt.length} chars` : 'Cmd+Enter to submit'}
             </span>
             <Button

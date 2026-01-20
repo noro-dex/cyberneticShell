@@ -34,8 +34,8 @@ export function Badge({ variant = 'default', children, className = '' }: BadgePr
   return (
     <span
       className={`
-        inline-flex items-center px-2 py-0.5
-        text-xs font-medium rounded-full
+        inline-flex items-center px-3 py-1
+        text-sm font-medium rounded-full
         ${classes}
         ${className}
       `}

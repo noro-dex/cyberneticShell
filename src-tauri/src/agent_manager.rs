@@ -42,6 +42,8 @@ impl AgentManager {
             "--output-format".to_string(),
             "stream-json".to_string(),
             "--verbose".to_string(),
+            "--permission-mode".to_string(),
+            "bypassPermissions".to_string(),
         ];
 
         // Add model selection if specified
@@ -58,6 +60,7 @@ impl AgentManager {
             }
         }
 
+        // Only set allowed tools if explicitly specified - otherwise use Claude's defaults
         if let Some(tools) = &config.allowed_tools {
             if !tools.is_empty() {
                 args.push("--allowedTools".to_string());

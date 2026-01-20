@@ -20,7 +20,13 @@ export function useTauriEvents() {
         agents,
       } = useAgentsStore.getState();
 
-      const { updateWorkspaceState, incrementMessiness } = useWorkspacesStore.getState();
+      const {
+        workspaces,
+        updateWorkspaceState,
+        incrementMessiness,
+        setLastOutput,
+        getDownstreamWorkspaces,
+      } = useWorkspacesStore.getState();
       const { setStatusMessage } = useUIStore.getState();
 
       console.log('[Event]', data.type, 'agent_id:', data.agent_id, 'known agents:', Object.keys(agents));
@@ -99,6 +105,39 @@ export function useTauriEvents() {
             );
             // Add desk clutter on task completion
             incrementMessiness(resultAgent.workspaceId, data.success ? 15 : 5);
+
+            // Store the full output from the agent for workflow piping (concatenate all messages)
+            if (data.success) {
+              const logs = resultAgent.logs || [];
+              const allMessages = logs.filter((l) => l.type === 'message');
+              const fullOutput = allMessages.map((m) => m.content).join('\n\n');
+              if (fullOutput) {
+                setLastOutput(resultAgent.workspaceId, fullOutput);
+              }
+
+              // Trigger auto-run on downstream workspaces
+              const downstreamIds = getDownstreamWorkspaces(resultAgent.workspaceId);
+              downstreamIds.forEach((downstreamId) => {
+                const downstream = workspaces[downstreamId];
+                if (downstream?.autoRun && downstream.taskTemplate) {
+                  // Check if all inputs are complete
+                  const allInputsComplete = downstream.inputConnections?.every((inputId) => {
+                    const inputWs = workspaces[inputId];
+                    return inputWs?.state === 'success' && inputWs?.lastOutput;
+                  });
+
+                  if (allInputsComplete) {
+                    // Emit a custom event to trigger the task
+                    // This will be picked up by the app to start the task
+                    window.dispatchEvent(
+                      new CustomEvent('trigger-workflow-task', {
+                        detail: { workspaceId: downstreamId },
+                      })
+                    );
+                  }
+                }
+              });
+            }
           }
           appendLog(data.agent_id, {
             type: data.success ? 'info' : 'error',

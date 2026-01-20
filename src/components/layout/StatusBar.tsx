@@ -14,25 +14,25 @@ export function StatusBar() {
   ).length;
 
   return (
-    <div className="h-8 bg-canvas-surface border-t border-canvas-border flex items-center justify-between px-4 text-xs">
-      <div className="flex items-center space-x-4">
+    <div className="h-10 bg-canvas-surface border-t border-canvas-border flex items-center justify-between px-5 text-sm">
+      <div className="flex items-center space-x-5">
         <span className="text-gray-400">
-          <span className="text-gray-200">{workspaceCount}</span> workspace
+          <span className="text-gray-200 font-medium">{workspaceCount}</span> workspace
           {workspaceCount !== 1 ? 's' : ''}
         </span>
         <span className="text-gray-400">
-          <span className="text-gray-200">{agentCount}</span> agent{agentCount !== 1 ? 's' : ''}
+          <span className="text-gray-200 font-medium">{agentCount}</span> agent{agentCount !== 1 ? 's' : ''}
           {activeAgents > 0 && (
             <span className="ml-1 text-green-400">({activeAgents} active)</span>
           )}
         </span>
       </div>
 
-      <div className="flex items-center space-x-4">
+      <div className="flex items-center space-x-5">
         <span className="text-gray-400">{statusMessage}</span>
-        <div className="flex items-center space-x-1">
+        <div className="flex items-center space-x-2">
           <div
-            className={`w-2 h-2 rounded-full ${
+            className={`w-2.5 h-2.5 rounded-full ${
               cliAvailable === null
                 ? 'bg-yellow-500'
                 : cliAvailable

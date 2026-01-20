@@ -8,7 +8,7 @@ interface WorkspacesState {
   workspaces: Record<string, Workspace>;
   drawing: DrawingState;
 
-  addWorkspace: (workspace: Omit<Workspace, 'id' | 'createdAt'>) => string;
+  addWorkspace: (workspace: Omit<Workspace, 'id' | 'createdAt' | 'taskTemplate' | 'lastOutput' | 'inputConnections' | 'outputConnections' | 'autoRun'>) => string;
   removeWorkspace: (workspaceId: string) => void;
   updateWorkspaceState: (workspaceId: string, state: WorkspaceState) => void;
   setWorkspaceAgent: (workspaceId: string, agentId: string | null) => void;
@@ -17,6 +17,15 @@ interface WorkspacesState {
   renameWorkspace: (workspaceId: string, name: string) => void;
   setSystemPrompt: (workspaceId: string, prompt: string | null) => void;
   setModel: (workspaceId: string, model: ModelId) => void;
+
+  // Workflow methods
+  setTaskTemplate: (workspaceId: string, template: string | null) => void;
+  setLastOutput: (workspaceId: string, output: string | null) => void;
+  setAutoRun: (workspaceId: string, autoRun: boolean) => void;
+  connectWorkspaces: (fromId: string, toId: string) => void;
+  disconnectWorkspaces: (fromId: string, toId: string) => void;
+  getInputsForWorkspace: (workspaceId: string) => { id: string; output: string | null }[];
+  getDownstreamWorkspaces: (workspaceId: string) => string[];
 
   startDrawing: (x: number, y: number) => void;
   updateDrawing: (x: number, y: number) => void;
@@ -44,8 +53,14 @@ export const useWorkspacesStore = create<WorkspacesState>()(
           id,
           name: workspace.name || `Workspace ${workspaceCounter}`,
           createdAt: Date.now(),
-          systemPrompt: null,
-          model: 'claude-sonnet-4-20250514',
+          systemPrompt: workspace.systemPrompt ?? null,
+          model: workspace.model ?? 'claude-sonnet-4-20250514',
+          // Workflow defaults
+          taskTemplate: null,
+          lastOutput: null,
+          inputConnections: [],
+          outputConnections: [],
+          autoRun: false,
         };
       });
       return id;
@@ -53,6 +68,11 @@ export const useWorkspacesStore = create<WorkspacesState>()(
 
     removeWorkspace: (workspaceId: string) => {
       set((state) => {
+        // Remove this workspace from all connections
+        Object.values(state.workspaces).forEach((ws) => {
+          ws.inputConnections = ws.inputConnections.filter((id) => id !== workspaceId);
+          ws.outputConnections = ws.outputConnections.filter((id) => id !== workspaceId);
+        });
         delete state.workspaces[workspaceId];
       });
     },
@@ -113,6 +133,77 @@ export const useWorkspacesStore = create<WorkspacesState>()(
           state.workspaces[workspaceId].model = model;
         }
       });
+    },
+
+    // Workflow methods
+    setTaskTemplate: (workspaceId: string, template: string | null) => {
+      set((state) => {
+        if (state.workspaces[workspaceId]) {
+          state.workspaces[workspaceId].taskTemplate = template;
+        }
+      });
+    },
+
+    setLastOutput: (workspaceId: string, output: string | null) => {
+      set((state) => {
+        if (state.workspaces[workspaceId]) {
+          state.workspaces[workspaceId].lastOutput = output;
+        }
+      });
+    },
+
+    setAutoRun: (workspaceId: string, autoRun: boolean) => {
+      set((state) => {
+        if (state.workspaces[workspaceId]) {
+          state.workspaces[workspaceId].autoRun = autoRun;
+        }
+      });
+    },
+
+    connectWorkspaces: (fromId: string, toId: string) => {
+      set((state) => {
+        const fromWs = state.workspaces[fromId];
+        const toWs = state.workspaces[toId];
+        if (fromWs && toWs) {
+          // Avoid duplicates
+          if (!fromWs.outputConnections.includes(toId)) {
+            fromWs.outputConnections.push(toId);
+          }
+          if (!toWs.inputConnections.includes(fromId)) {
+            toWs.inputConnections.push(fromId);
+          }
+        }
+      });
+    },
+
+    disconnectWorkspaces: (fromId: string, toId: string) => {
+      set((state) => {
+        const fromWs = state.workspaces[fromId];
+        const toWs = state.workspaces[toId];
+        if (fromWs) {
+          fromWs.outputConnections = fromWs.outputConnections.filter((id) => id !== toId);
+        }
+        if (toWs) {
+          toWs.inputConnections = toWs.inputConnections.filter((id) => id !== fromId);
+        }
+      });
+    },
+
+    getInputsForWorkspace: (workspaceId: string) => {
+      const { workspaces } = get();
+      const workspace = workspaces[workspaceId];
+      if (!workspace) return [];
+
+      return workspace.inputConnections.map((inputId) => ({
+        id: inputId,
+        output: workspaces[inputId]?.lastOutput ?? null,
+      }));
+    },
+
+    getDownstreamWorkspaces: (workspaceId: string) => {
+      const { workspaces } = get();
+      const workspace = workspaces[workspaceId];
+      return workspace?.outputConnections ?? [];
     },
 
     startDrawing: (x: number, y: number) => {

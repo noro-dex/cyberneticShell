@@ -2,6 +2,12 @@ export type WorkspaceState = 'empty' | 'occupied' | 'working' | 'success' | 'err
 
 export type ModelId = 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514' | 'claude-3-5-haiku-20241022';
 
+export interface WorkspaceConnection {
+  fromId: string;      // Source workspace ID
+  toId: string;        // Target workspace ID
+  label?: string;      // Optional label for the connection
+}
+
 export interface Workspace {
   id: string;
   name: string;
@@ -15,6 +21,13 @@ export interface Workspace {
   createdAt: number;
   systemPrompt: string | null;
   model: ModelId;
+
+  // Workflow features
+  taskTemplate: string | null;      // Pre-defined task prompt for this workspace
+  lastOutput: string | null;        // Output from last completed task (for piping)
+  inputConnections: string[];       // IDs of workspaces that feed INTO this one
+  outputConnections: string[];      // IDs of workspaces this one feeds TO
+  autoRun: boolean;                 // Auto-run when all inputs complete
 }
 
 export const AVAILABLE_MODELS: { id: ModelId; name: string; description: string }[] = [

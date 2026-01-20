@@ -151,3 +151,17 @@ pub struct ErrorInfo {
     #[serde(default)]
     pub message: Option<String>,
 }
+
+// Skills types
+#[derive(Debug, Clone, Serialize)]
+pub struct SkillInfo {
+    pub name: String,
+    pub description: String,
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct SkillDetail {
+    pub info: SkillInfo,
+    pub markdown: String,
+    pub path: String,
+}

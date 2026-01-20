@@ -3,12 +3,14 @@ import { WorkspaceList } from '../panels/WorkspaceList';
 import { WorkspacePanel } from '../panels/WorkspacePanel';
 import { AgentDetail } from '../panels/AgentDetail';
 import { LogViewer } from '../panels/LogViewer';
+import { SkillsPanel } from '../panels/SkillsPanel';
 import { TaskInput } from '../panels/TaskInput';
 
 const PANEL_TABS: { id: ActivePanel; label: string; icon: string }[] = [
   { id: 'list', label: 'List', icon: '📋' },
   { id: 'workspace', label: 'Workspace', icon: '🖥️' },
   { id: 'agent', label: 'Agent', icon: '🤖' },
+  { id: 'skills', label: 'Skills', icon: '🔧' },
   { id: 'logs', label: 'Logs', icon: '📜' },
 ];
 
@@ -47,10 +49,10 @@ export function Sidebar() {
   }
 
   return (
-    <div className="w-80 bg-canvas-surface border-l border-canvas-border flex flex-col">
+    <div className="w-96 bg-canvas-surface border-l border-canvas-border flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b border-canvas-border">
-        <h2 className="text-sm font-semibold text-gray-200">Claude Command Center</h2>
+      <div className="flex items-center justify-between p-4 border-b border-canvas-border">
+        <h2 className="text-base font-semibold text-gray-200">Claude Command Center</h2>
         <button
           onClick={toggleSidebar}
           className="p-1 text-gray-400 hover:text-white hover:bg-gray-700 rounded"
@@ -67,7 +69,7 @@ export function Sidebar() {
             key={tab.id}
             onClick={() => setActivePanel(tab.id)}
             className={`
-              flex-1 px-2 py-2 text-xs font-medium
+              flex-1 px-3 py-3 text-sm font-medium
               transition-colors duration-150
               ${
                 activePanel === tab.id
@@ -87,6 +89,7 @@ export function Sidebar() {
         {activePanel === 'list' && <WorkspaceList />}
         {activePanel === 'workspace' && <WorkspacePanel />}
         {activePanel === 'agent' && <AgentDetail />}
+        {activePanel === 'skills' && <SkillsPanel />}
         {activePanel === 'logs' && <LogViewer />}
       </div>
 
