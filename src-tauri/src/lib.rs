@@ -20,6 +20,7 @@ pub fn run() {
             stop_all_agents,
             list_agents,
             check_cli_available,
+            check_cursor_cli_available,
             list_skills,
             get_skill,
         ])

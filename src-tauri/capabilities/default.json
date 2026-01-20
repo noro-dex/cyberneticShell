@@ -14,6 +14,11 @@
           "name": "claude",
           "cmd": "claude",
           "args": true
+        },
+        {
+          "name": "agent",
+          "cmd": "agent",
+          "args": true
         }
       ]
     }

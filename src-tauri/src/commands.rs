@@ -76,6 +76,17 @@ pub fn check_cli_available() -> Result<bool, String> {
     }
 }
 
+/// Check if the Cursor Agent CLI (`agent`) is available.
+/// Install: curl https://cursor.com/install -fsS | bash
+#[tauri::command]
+pub fn check_cursor_cli_available() -> Result<bool, String> {
+    // agent --version or agent -h; --version is more likely to exit 0 when present
+    match Command::new("agent").arg("--version").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(_) => Ok(false),
+    }
+}
+
 #[tauri::command]
 pub fn list_skills() -> Result<Vec<SkillInfo>, String> {
     let home = dirs::home_dir().ok_or("Could not find home directory")?;

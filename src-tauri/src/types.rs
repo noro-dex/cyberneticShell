@@ -3,11 +3,27 @@ use serde::{Deserialize, Serialize};
 pub type AgentId = String;
 pub type WorkspaceId = String;
 
+/// CLI backend: Claude (`claude`) or Cursor Agent (`agent`).
+/// See: https://cursor.com/docs/cli/overview
+#[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum CliType {
+    #[default]
+    Claude,
+    Cursor,
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct AgentConfig {
     pub workspace_id: WorkspaceId,
     pub prompt: String,
+    /// Which CLI to use: `claude` (default) or `cursor`.
+    #[serde(default)]
+    pub cli: Option<CliType>,
+    /// Cursor-only: `agent` (default), `plan`, or `ask`. Ignored for Claude.
+    #[serde(default)]
+    pub mode: Option<String>,
     #[serde(default)]
     pub allowed_tools: Option<Vec<String>>,
     #[serde(default)]

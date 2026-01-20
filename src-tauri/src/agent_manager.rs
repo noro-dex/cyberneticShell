@@ -8,6 +8,58 @@ use uuid::Uuid;
 
 use crate::types::*;
 
+fn build_claude_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
+    let mut args = vec![
+        "-p".to_string(),
+        config.prompt.clone(),
+        "--output-format".to_string(),
+        "stream-json".to_string(),
+        "--verbose".to_string(),
+        "--permission-mode".to_string(),
+        "bypassPermissions".to_string(),
+    ];
+    if let Some(model) = &config.model {
+        args.push("--model".to_string());
+        args.push(model.clone());
+    }
+    if let Some(sp) = &config.system_prompt {
+        if !sp.is_empty() {
+            args.push("--system-prompt".to_string());
+            args.push(sp.clone());
+        }
+    }
+    if let Some(tools) = &config.allowed_tools {
+        if !tools.is_empty() {
+            args.push("--allowedTools".to_string());
+            args.push(tools.join(","));
+        }
+    }
+    ("claude", args)
+}
+
+fn build_cursor_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
+    // Cursor CLI: https://cursor.com/docs/cli/overview
+    // Modes: agent (default), plan, ask. Non-interactive: -p, --model, --output-format
+    let mut args = vec![
+        "-p".to_string(),
+        config.prompt.clone(),
+        "--output-format".to_string(),
+        "stream-json".to_string(),
+    ];
+    if let Some(model) = &config.model {
+        args.push("--model".to_string());
+        args.push(model.clone());
+    }
+    if let Some(mode) = &config.mode {
+        let m = mode.trim().to_lowercase();
+        if ["agent", "plan", "ask"].contains(&m.as_str()) {
+            args.push("--mode".to_string());
+            args.push(m);
+        }
+    }
+    ("agent", args)
+}
+
 pub struct AgentHandle {
     pub id: AgentId,
     pub workspace_id: WorkspaceId,
@@ -35,40 +87,14 @@ impl AgentManager {
     {
         let agent_id = Uuid::new_v4().to_string();
         let workspace_id = config.workspace_id.clone();
+        let cli = config.cli.as_ref().unwrap_or(&CliType::Claude);
 
-        let mut args = vec![
-            "-p".to_string(),
-            config.prompt.clone(),
-            "--output-format".to_string(),
-            "stream-json".to_string(),
-            "--verbose".to_string(),
-            "--permission-mode".to_string(),
-            "bypassPermissions".to_string(),
-        ];
+        let (binary, args) = match cli {
+            CliType::Claude => build_claude_args(&config),
+            CliType::Cursor => build_cursor_args(&config),
+        };
 
-        // Add model selection if specified
-        if let Some(model) = &config.model {
-            args.push("--model".to_string());
-            args.push(model.clone());
-        }
-
-        // Add system prompt if specified
-        if let Some(system_prompt) = &config.system_prompt {
-            if !system_prompt.is_empty() {
-                args.push("--system-prompt".to_string());
-                args.push(system_prompt.clone());
-            }
-        }
-
-        // Only set allowed tools if explicitly specified - otherwise use Claude's defaults
-        if let Some(tools) = &config.allowed_tools {
-            if !tools.is_empty() {
-                args.push("--allowedTools".to_string());
-                args.push(tools.join(","));
-            }
-        }
-
-        let mut cmd = Command::new("claude");
+        let mut cmd = Command::new(binary);
         cmd.args(&args)
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
@@ -107,7 +133,7 @@ impl AgentManager {
             let mut lines = reader.lines();
             while let Ok(Some(line)) = lines.next_line().await {
                 if !line.trim().is_empty() {
-                    eprintln!("[Claude stderr] {}", line);
+                    eprintln!("[CLI stderr] {}", line);
                     emit_stderr(AgentEvent::Error {
                         agent_id: agent_id_stderr.clone(),
                         message: format!("CLI: {}", line),
@@ -125,11 +151,11 @@ impl AgentManager {
                 let (reason, success) = match status {
                     Ok(output) if output.status.success() => (StopReason::Completed, true),
                     Ok(output) => {
-                        eprintln!("[Claude] Process exited with status: {:?}", output.status);
+                        eprintln!("[CLI] Process exited with status: {:?}", output.status);
                         (StopReason::Error, false)
                     }
                     Err(e) => {
-                        eprintln!("[Claude] Process error: {}", e);
+                        eprintln!("[CLI] Process error: {}", e);
                         (StopReason::Error, false)
                     }
                 };
