@@ -13,7 +13,7 @@ crate-type = ["lib", "cdylib", "staticlib"]
 tauri-build = { version = "2", features = [] }
 
 [dependencies]
-giga-command-center-core = { path = "../../crates/giga-command-center-core" }
+giga-command-center-core = { path = "../crates/giga-command-center-core" }
 tauri = { version = "2", features = ["devtools"] }
 tauri-plugin-shell = "2"
 serde = { workspace = true }
