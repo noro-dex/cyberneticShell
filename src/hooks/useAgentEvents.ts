@@ -5,7 +5,11 @@ import { useWorkspacesStore } from '../stores/workspaces';
 import { useUIStore } from '../stores/ui';
 import type { AgentEvent } from '../types/events';
 
-export function useTauriEvents() {
+/**
+ * Hook to listen to agent events from either Tauri or WebSocket.
+ * Works in both Tauri desktop mode and web mode.
+ */
+export function useAgentEvents() {
   useEffect(() => {
     let cleanup: (() => void) | null = null;
     

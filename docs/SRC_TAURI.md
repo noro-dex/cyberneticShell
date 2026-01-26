@@ -143,7 +143,7 @@ All functions are `#[tauri::command]` and can be called from the frontend via `i
 
 ### 4.1 `tauri.conf.json`
 
-- **Build:** `beforeDevCommand`: `npm run dev`; `devUrl`: `http://localhost:1420`; `beforeBuildCommand`: `npm run build`; `frontendDist`: `../dist`.
+- **Build:** `beforeDevCommand`: `bun run dev`; `devUrl`: `http://localhost:1420`; `beforeBuildCommand`: `bun run build`; `frontendDist`: `../dist`.
 - **App:** `withGlobalTauri: true`; one window “Claude Command Center”, 1400×900, min 1000×700; `csp: null`.
 - **Bundle:** `active: true`, `targets: "all"`.
 

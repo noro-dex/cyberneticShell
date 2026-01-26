@@ -2,6 +2,7 @@ mod routes;
 mod websocket;
 
 use std::sync::Arc;
+use std::path::PathBuf;
 use axum::{
     extract::Extension,
     routing::{get, post},
@@ -24,6 +25,30 @@ async fn main() {
     let (event_tx, _) = broadcast::channel::<String>(1000);
     let event_tx = Arc::new(event_tx);
 
+    // Determine static file directory
+    // Try environment variable first, then relative paths
+    let static_dir = std::env::var("STATIC_DIR")
+        .map(PathBuf::from)
+        .or_else(|_| {
+            // Try relative to current directory
+            let dist = PathBuf::from("dist");
+            if dist.exists() {
+                Ok(dist)
+            } else {
+                // Try relative to src-server (for development)
+                let dist = PathBuf::from("../dist");
+                if dist.exists() {
+                    Ok(dist)
+                } else {
+                    // Fallback to dist in current dir even if it doesn't exist
+                    Ok(PathBuf::from("dist"))
+                }
+            }
+        })
+        .unwrap_or_else(|_| PathBuf::from("dist"));
+
+    tracing::info!("Serving static files from: {}", static_dir.display());
+
     // Build application with routes
     let app = Router::new()
         // API routes
@@ -37,7 +62,7 @@ async fn main() {
         // WebSocket route
         .route("/ws", get(websocket::websocket_handler))
         // Static file serving (for frontend)
-        .nest_service("/", ServeDir::new("../dist"))
+        .nest_service("/", ServeDir::new(static_dir))
         // Add CORS
         .layer(CorsLayer::permissive())
         // Add shared state

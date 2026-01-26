@@ -28,11 +28,19 @@ pub fn run() {
         ])
         .on_window_event({
             let manager = manager.clone();
-            move |_window, event| {
-                if let tauri::WindowEvent::CloseRequested { .. } = event {
+            move |window, event| {
+                if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                    // Prevent window from closing immediately
+                    api.prevent_close();
+                    
                     let manager = manager.clone();
+                    let window = window.clone();
+                    
+                    // Stop all agents before allowing window to close
                     tauri::async_runtime::spawn(async move {
                         manager.stop_all().await;
+                        // Allow window to close after agents are stopped
+                        let _ = window.close();
                     });
                 }
             }

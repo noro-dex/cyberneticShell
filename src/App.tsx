@@ -3,7 +3,7 @@ import { CanvasRoot } from './canvas/CanvasRoot';
 import { Sidebar } from './components/layout/Sidebar';
 import { StatusBar } from './components/layout/StatusBar';
 import { OutputModal } from './components/OutputModal';
-import { useTauriEvents } from './hooks/useTauriEvents';
+import { useAgentEvents } from './hooks/useAgentEvents';
 import { useAgentCommands } from './hooks/useAgentCommands';
 import { useUIStore } from './stores/ui';
 
@@ -12,7 +12,7 @@ function App() {
   const { checkCliAvailable, checkCursorCliAvailable, checkKiloCliAvailable, checkGeminiCliAvailable, checkGrokCliAvailable, checkDeepseekCliAvailable } = useAgentCommands();
 
   // Set up event listeners
-  useTauriEvents();
+  useAgentEvents();
 
   // Check if Claude, Cursor, Kilo, Gemini, Grok, and DeepSeek CLIs are available on mount
   useEffect(() => {

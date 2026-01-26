@@ -6,8 +6,8 @@ use axum::{
 use std::sync::Arc;
 use tokio::sync::broadcast;
 use giga_command_center_core::{AgentManager, AgentConfig, AgentId, SkillInfo, SkillDetail, AgentEvent};
-use std::process::Command;
-use std::fs;
+use tokio::process::Command;
+use tokio::fs;
 use std::path::PathBuf;
 
 pub async fn start_agent(
@@ -25,7 +25,14 @@ pub async fn start_agent(
     manager.start_agent(config, emit_event)
         .await
         .map(Json)
-        .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
+        .map_err(|e| {
+            tracing::error!("Failed to start agent: {}", e);
+            match e {
+                giga_command_center_core::AgentError::CliNotAvailable => StatusCode::SERVICE_UNAVAILABLE,
+                giga_command_center_core::AgentError::AlreadyRunning => StatusCode::CONFLICT,
+                _ => StatusCode::INTERNAL_SERVER_ERROR,
+            }
+        })
 }
 
 pub async fn stop_agent(
@@ -35,7 +42,16 @@ pub async fn stop_agent(
     manager.stop_agent(&agent_id)
         .await
         .map(|_| StatusCode::NO_CONTENT)
-        .map_err(|_| StatusCode::NOT_FOUND)
+        .map_err(|e| {
+            tracing::debug!("Failed to stop agent {}: {}", agent_id, e);
+            match e {
+                giga_command_center_core::AgentError::NotFound => StatusCode::NOT_FOUND,
+                _ => {
+                    tracing::error!("Unexpected error stopping agent: {}", e);
+                    StatusCode::INTERNAL_SERVER_ERROR
+                }
+            }
+        })
 }
 
 pub async fn stop_all_agents(
@@ -64,7 +80,7 @@ pub async fn check_cli_available(
         _ => return Json(false),
     };
     
-    let result = Command::new(binary).arg("--version").output();
+    let result = Command::new(binary).arg("--version").output().await;
     Json(result.map(|o| o.status.success()).unwrap_or(false))
 }
 
@@ -77,14 +93,25 @@ pub async fn list_skills() -> Result<Json<Vec<SkillInfo>>, StatusCode> {
     }
 
     let mut skills = Vec::new();
-    let entries = fs::read_dir(&skills_dir).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let mut entries = fs::read_dir(&skills_dir).await.map_err(|e| {
+        tracing::error!("Failed to read skills directory: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
 
-    for entry in entries.flatten() {
+    while let Some(entry) = entries.next_entry().await.map_err(|e| {
+        tracing::error!("Failed to read directory entry: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })? {
         let path = entry.path();
-        if path.is_dir() {
+        let metadata = entry.metadata().await.map_err(|e| {
+            tracing::error!("Failed to read entry metadata: {}", e);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
+        
+        if metadata.is_dir() {
             let skill_md = path.join("SKILL.md");
             if skill_md.exists() {
-                if let Ok(content) = fs::read_to_string(&skill_md) {
+                if let Ok(content) = fs::read_to_string(&skill_md).await {
                     if let Some(info) = parse_skill_frontmatter(&content, &path) {
                         skills.push(info);
                     }
@@ -107,9 +134,15 @@ pub async fn get_skill(
         return Err(StatusCode::NOT_FOUND);
     }
 
-    let content = fs::read_to_string(&skill_md).map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
+    let content = fs::read_to_string(&skill_md).await.map_err(|e| {
+        tracing::error!("Failed to read skill file: {}", e);
+        StatusCode::INTERNAL_SERVER_ERROR
+    })?;
     let info = parse_skill_frontmatter(&content, &skill_path)
-        .ok_or(StatusCode::INTERNAL_SERVER_ERROR)?;
+        .ok_or_else(|| {
+            tracing::error!("Failed to parse skill frontmatter for: {}", skill_name);
+            StatusCode::INTERNAL_SERVER_ERROR
+        })?;
 
     let markdown = extract_markdown_content(&content);
 

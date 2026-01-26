@@ -1,6 +1,7 @@
 import { isTauri, getApiBaseUrl } from './env';
 import type { AgentConfig, AgentEvent, AgentId } from '../types/agent';
 import type { SkillInfo, SkillDetail } from '../types/skill';
+import { isAgentEvent } from '../types/events';
 
 // Tauri imports (only used when in Tauri mode)
 let tauriInvoke: typeof import('@tauri-apps/api/core').invoke;
@@ -23,49 +24,149 @@ if (isTauri) {
 let ws: WebSocket | null = null;
 let wsEventListeners: Set<(event: AgentEvent) => void> = new Set();
 let wsReconnectAttempts = 0;
-const MAX_RECONNECT_ATTEMPTS = 5;
+let wsReconnectTimer: ReturnType<typeof setTimeout> | null = null;
+let wsConnectionState: 'disconnected' | 'connecting' | 'connected' = 'disconnected';
 
-function connectWebSocket() {
-  if (isTauri || ws?.readyState === WebSocket.OPEN) {
+const MAX_RECONNECT_ATTEMPTS = 10;
+const INITIAL_RECONNECT_DELAY = 1000; // 1 second
+const MAX_RECONNECT_DELAY = 30000; // 30 seconds
+
+/**
+ * Calculate exponential backoff delay for reconnection
+ */
+function getReconnectDelay(attempt: number): number {
+  const delay = Math.min(INITIAL_RECONNECT_DELAY * Math.pow(2, attempt), MAX_RECONNECT_DELAY);
+  // Add jitter to prevent thundering herd
+  return delay + Math.random() * 1000;
+}
+
+/**
+ * Connect to WebSocket with improved reconnection logic
+ */
+function connectWebSocket(): void {
+  if (isTauri) {
     return;
+  }
+
+  // Don't connect if already connected or connecting
+  if (ws?.readyState === WebSocket.OPEN || ws?.readyState === WebSocket.CONNECTING) {
+    return;
+  }
+
+  // Clear any pending reconnection timer
+  if (wsReconnectTimer) {
+    clearTimeout(wsReconnectTimer);
+    wsReconnectTimer = null;
   }
 
   const wsUrl = getApiBaseUrl().replace('http://', 'ws://').replace('https://', 'wss://') + '/ws';
   
   try {
+    wsConnectionState = 'connecting';
     ws = new WebSocket(wsUrl);
     
     ws.onopen = () => {
       console.log('[WebSocket] Connected');
+      wsConnectionState = 'connected';
       wsReconnectAttempts = 0;
+      
+      // Notify listeners that connection is established
+      wsEventListeners.forEach(listener => {
+        // Send a synthetic event to indicate connection (optional)
+        // This could be used for UI feedback
+      });
     };
     
     ws.onmessage = (event) => {
       try {
-        const agentEvent: AgentEvent = JSON.parse(event.data);
-        wsEventListeners.forEach(listener => listener(agentEvent));
+        const data = JSON.parse(event.data);
+        
+        // Validate that the message is a valid AgentEvent
+        if (!isAgentEvent(data)) {
+          console.warn('[WebSocket] Received invalid event:', data);
+          return;
+        }
+        
+        const agentEvent: AgentEvent = data;
+        wsEventListeners.forEach(listener => {
+          try {
+            listener(agentEvent);
+          } catch (error) {
+            console.error('[WebSocket] Error in event listener:', error);
+          }
+        });
       } catch (error) {
-        console.error('[WebSocket] Failed to parse message:', error);
+        console.error('[WebSocket] Failed to parse message:', error, 'Raw data:', event.data);
       }
     };
     
     ws.onerror = (error) => {
       console.error('[WebSocket] Error:', error);
+      wsConnectionState = 'disconnected';
     };
     
-    ws.onclose = () => {
-      console.log('[WebSocket] Disconnected');
+    ws.onclose = (event) => {
+      console.log('[WebSocket] Disconnected', {
+        code: event.code,
+        reason: event.reason,
+        wasClean: event.wasClean,
+      });
+      wsConnectionState = 'disconnected';
       ws = null;
       
-      // Attempt to reconnect
-      if (wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      // Only attempt to reconnect if we haven't exceeded max attempts
+      // and the close wasn't intentional (code 1000)
+      if (event.code !== 1000 && wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
         wsReconnectAttempts++;
-        setTimeout(() => connectWebSocket(), 1000 * wsReconnectAttempts);
+        const delay = getReconnectDelay(wsReconnectAttempts - 1);
+        console.log(`[WebSocket] Reconnecting in ${delay}ms (attempt ${wsReconnectAttempts}/${MAX_RECONNECT_ATTEMPTS})`);
+        
+        wsReconnectTimer = setTimeout(() => {
+          connectWebSocket();
+        }, delay);
+      } else if (wsReconnectAttempts >= MAX_RECONNECT_ATTEMPTS) {
+        console.error('[WebSocket] Max reconnection attempts reached. Manual reconnection required.');
+        wsEventListeners.forEach(listener => {
+          // Could emit a connection error event here for UI feedback
+        });
       }
     };
   } catch (error) {
-    console.error('[WebSocket] Failed to connect:', error);
+    console.error('[WebSocket] Failed to create connection:', error);
+    wsConnectionState = 'disconnected';
+    ws = null;
+    
+    // Attempt to reconnect after a delay
+    if (wsReconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+      wsReconnectAttempts++;
+      const delay = getReconnectDelay(wsReconnectAttempts - 1);
+      wsReconnectTimer = setTimeout(() => {
+        connectWebSocket();
+      }, delay);
+    }
   }
+}
+
+/**
+ * Get current WebSocket connection state
+ */
+export function getWebSocketState(): 'disconnected' | 'connecting' | 'connected' {
+  return wsConnectionState;
+}
+
+/**
+ * Manually reconnect WebSocket (useful for UI controls)
+ */
+export function reconnectWebSocket(): void {
+  if (isTauri) {
+    return;
+  }
+  
+  wsReconnectAttempts = 0;
+  if (ws) {
+    ws.close();
+  }
+  connectWebSocket();
 }
 
 /**
@@ -88,7 +189,8 @@ export const api = {
         body: JSON.stringify(config),
       });
       if (!response.ok) {
-        throw new Error(`Failed to start agent: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Failed to start agent: ${response.status} ${errorText}`);
       }
       return await response.json();
     }
@@ -108,7 +210,8 @@ export const api = {
         method: 'DELETE',
       });
       if (!response.ok) {
-        throw new Error(`Failed to stop agent: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Failed to stop agent: ${response.status} ${errorText}`);
       }
     }
   },
@@ -127,7 +230,8 @@ export const api = {
         method: 'DELETE',
       });
       if (!response.ok) {
-        throw new Error(`Failed to stop all agents: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Failed to stop all agents: ${response.status} ${errorText}`);
       }
     }
   },
@@ -144,7 +248,8 @@ export const api = {
     } else {
       const response = await fetch(`${getApiBaseUrl()}/api/agents`);
       if (!response.ok) {
-        throw new Error(`Failed to list agents: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Failed to list agents: ${response.status} ${errorText}`);
       }
       return await response.json();
     }
@@ -188,7 +293,8 @@ export const api = {
     } else {
       const response = await fetch(`${getApiBaseUrl()}/api/skills`);
       if (!response.ok) {
-        throw new Error(`Failed to list skills: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        throw new Error(`Failed to list skills: ${response.status} ${errorText}`);
       }
       return await response.json();
     }
@@ -206,7 +312,11 @@ export const api = {
     } else {
       const response = await fetch(`${getApiBaseUrl()}/api/skills/${encodeURIComponent(skillName)}`);
       if (!response.ok) {
-        throw new Error(`Failed to get skill: ${response.statusText}`);
+        const errorText = await response.text().catch(() => response.statusText);
+        if (response.status === 404) {
+          throw new Error(`Skill '${skillName}' not found`);
+        }
+        throw new Error(`Failed to get skill: ${response.status} ${errorText}`);
       }
       return await response.json();
     }
@@ -232,16 +342,20 @@ export const api = {
       if (!ws || ws.readyState !== WebSocket.OPEN) {
         connectWebSocket();
         // Wait for connection (with timeout)
+        const maxWaitTime = 10000; // 10 seconds
+        const checkInterval = 100; // Check every 100ms
+        const maxAttempts = maxWaitTime / checkInterval;
+        
         let attempts = 0;
         await new Promise<void>((resolve, reject) => {
           const checkConnection = () => {
             attempts++;
             if (ws?.readyState === WebSocket.OPEN) {
               resolve();
-            } else if (attempts > 50) {
-              reject(new Error('WebSocket connection timeout'));
+            } else if (attempts >= maxAttempts) {
+              reject(new Error('WebSocket connection timeout. Please check if the server is running.'));
             } else {
-              setTimeout(checkConnection, 100);
+              setTimeout(checkConnection, checkInterval);
             }
           };
           checkConnection();
