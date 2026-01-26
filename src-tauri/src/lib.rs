@@ -1,10 +1,8 @@
-mod agent_manager;
 mod commands;
-mod types;
 
 use std::sync::Arc;
 
-use agent_manager::AgentManager;
+use giga_command_center_core::AgentManager;
 use commands::*;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

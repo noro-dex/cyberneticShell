@@ -4,8 +4,7 @@ use std::process::Command;
 use std::sync::Arc;
 use tauri::{AppHandle, Emitter, State};
 
-use crate::agent_manager::AgentManager;
-use crate::types::*;
+use giga_command_center_core::{AgentManager, AgentConfig, AgentEvent, AgentId, StopReason, SkillInfo, SkillDetail};
 
 #[tauri::command]
 pub async fn start_agent(

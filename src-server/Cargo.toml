@@ -1,0 +1,20 @@
+[package]
+name = "giga-command-center-server"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+description = "Web server for agent CLI management"
+
+[dependencies]
+giga-command-center-core = { path = "../crates/giga-command-center-core" }
+axum = { version = "0.7", features = ["ws", "multipart", "json"] }
+futures-util = "0.3"
+tokio = { version = "1", features = ["full"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+tower = "0.4"
+tower-http = { version = "0.5", features = ["fs", "cors", "trace"] }
+uuid = { workspace = true }
+dirs = "5"
+tracing = "0.1"
+tracing-subscriber = "1.0"
