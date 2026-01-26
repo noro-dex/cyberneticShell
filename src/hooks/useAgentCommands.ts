@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { api } from '../utils/api';
 import { useAgentsStore } from '../stores/agents';
 import { useWorkspacesStore } from '../stores/workspaces';
 import { useUIStore } from '../stores/ui';
@@ -79,7 +79,7 @@ export function useAgentCommands() {
         };
 
         // The backend returns the agent ID it creates
-        const backendAgentId = await invoke<string>('start_agent', { config });
+        const backendAgentId = await api.startAgent(config);
 
         // Create the agent in our store with the backend's ID
         const { agents } = useAgentsStore.getState();
@@ -147,7 +147,7 @@ export function useAgentCommands() {
     async (agentId: string) => {
       try {
         setStatusMessage('Stopping task...');
-        await invoke('stop_agent', { agentId });
+        await api.stopAgent(agentId);
         setStatusMessage('Task stopped');
       } catch (error) {
         setStatusMessage(`Failed to stop task: ${error}`);
@@ -162,7 +162,7 @@ export function useAgentCommands() {
       try {
         const agent = getAgentByWorkspace(workspaceId);
         if (agent) {
-          await invoke('stop_agent', { agentId: agent.id });
+          await api.stopAgent(agent.id);
           removeAgent(agent.id);
         }
         removeWorkspace(workspaceId);
@@ -179,8 +179,7 @@ export function useAgentCommands() {
 
   const checkCliAvailable = useCallback(async (): Promise<boolean> => {
     try {
-      const available = await invoke<boolean>('check_cli_available');
-      return available;
+      return await api.checkCliAvailable('claude');
     } catch {
       return false;
     }
@@ -188,7 +187,7 @@ export function useAgentCommands() {
 
   const checkCursorCliAvailable = useCallback(async (): Promise<boolean> => {
     try {
-      return await invoke<boolean>('check_cursor_cli_available');
+      return await api.checkCliAvailable('cursor');
     } catch {
       return false;
     }
@@ -196,7 +195,7 @@ export function useAgentCommands() {
 
   const checkKiloCliAvailable = useCallback(async (): Promise<boolean> => {
     try {
-      return await invoke<boolean>('check_kilo_cli_available');
+      return await api.checkCliAvailable('kilo');
     } catch {
       return false;
     }
@@ -204,7 +203,7 @@ export function useAgentCommands() {
 
   const checkGeminiCliAvailable = useCallback(async (): Promise<boolean> => {
     try {
-      return await invoke<boolean>('check_gemini_cli_available');
+      return await api.checkCliAvailable('gemini');
     } catch {
       return false;
     }
@@ -212,7 +211,7 @@ export function useAgentCommands() {
 
   const checkGrokCliAvailable = useCallback(async (): Promise<boolean> => {
     try {
-      return await invoke<boolean>('check_grok_cli_available');
+      return await api.checkCliAvailable('grok');
     } catch {
       return false;
     }
@@ -220,7 +219,7 @@ export function useAgentCommands() {
 
   const checkDeepseekCliAvailable = useCallback(async (): Promise<boolean> => {
     try {
-      return await invoke<boolean>('check_deepseek_cli_available');
+      return await api.checkCliAvailable('deepseek');
     } catch {
       return false;
     }

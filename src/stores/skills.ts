@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { invoke } from '@tauri-apps/api/core';
+import { api } from '../utils/api';
 import type { SkillInfo, SkillDetail } from '../types/skill';
 
 interface SkillsState {
@@ -23,7 +23,7 @@ export const useSkillsStore = create<SkillsState>((set) => ({
   loadSkills: async () => {
     set({ loading: true, error: null });
     try {
-      const skills = await invoke<SkillInfo[]>('list_skills');
+      const skills = await api.listSkills();
       set({ skills, loading: false });
     } catch (error) {
       set({ error: String(error), loading: false });
@@ -37,7 +37,7 @@ export const useSkillsStore = create<SkillsState>((set) => ({
     }
 
     try {
-      const detail = await invoke<SkillDetail>('get_skill', { skillName });
+      const detail = await api.getSkill(skillName);
       set({ selectedSkill: detail });
     } catch (error) {
       set({ error: String(error) });

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { listen } from '@tauri-apps/api/event';
+import { api } from '../utils/api';
 import { useAgentsStore } from '../stores/agents';
 import { useWorkspacesStore } from '../stores/workspaces';
 import { useUIStore } from '../stores/ui';
@@ -7,9 +7,10 @@ import type { AgentEvent } from '../types/events';
 
 export function useTauriEvents() {
   useEffect(() => {
-    const unlisten = listen<AgentEvent>('agent-event', (event) => {
-      const data = event.payload;
-
+    let cleanup: (() => void) | null = null;
+    
+    // Set up event listener
+    api.listenToEvents((data: AgentEvent) => {
       // Get fresh state on each event to avoid stale closure issues
       const {
         updateAgentState,
@@ -171,10 +172,14 @@ export function useTauriEvents() {
           break;
         }
       }
+    }).then((cleanupFn) => {
+      cleanup = cleanupFn;
     });
 
     return () => {
-      unlisten.then((fn) => fn());
+      if (cleanup) {
+        cleanup();
+      }
     };
   }, []); // Empty deps - we get fresh state inside the handler
 }
