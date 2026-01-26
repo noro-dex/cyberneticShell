@@ -31,15 +31,15 @@ export interface LogEntry {
   toolInput?: Record<string, unknown>;
 }
 
-/** CLI backend: `claude` (default) or `cursor` (Cursor Agent CLI). */
-export type CliType = 'claude' | 'cursor';
+/** CLI backend: `claude` (default), `cursor` (Cursor Agent CLI), `kilo` (Kilo Code CLI), `gemini` (Gemini CLI), `grok` (Grok CLI), or `deepseek` (DeepSeek CLI). */
+export type CliType = 'claude' | 'cursor' | 'kilo' | 'gemini' | 'grok' | 'deepseek';
 
 export interface AgentConfig {
   workspaceId: string;
   prompt: string;
-  /** `claude` (default) or `cursor`. See https://cursor.com/docs/cli/overview */
+  /** `claude` (default), `cursor`, `kilo`, `gemini`, `grok`, or `deepseek`. See https://cursor.com/docs/cli/overview, https://github.com/Kilo-Org/kilocode, https://github.com/google-gemini/gemini-cli, https://github.com/superagent-ai/grok-cli, https://github.com/PierrunoYT/deepseek-cli */
   cli?: CliType;
-  /** Cursor-only: `agent`, `plan`, or `ask`. Ignored for Claude. */
+  /** Cursor-only: `agent`, `plan`, or `ask`. Ignored for Claude and Kilo. */
   mode?: string;
   allowedTools?: string[];
   workingDirectory?: string;

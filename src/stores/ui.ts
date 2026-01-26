@@ -20,6 +20,10 @@ interface UIState {
   statusMessage: string;
   cliAvailable: boolean | null;
   cursorCliAvailable: boolean | null;
+  kiloCliAvailable: boolean | null;
+  geminiCliAvailable: boolean | null;
+  grokCliAvailable: boolean | null;
+  deepseekCliAvailable: boolean | null;
   outputModalAgentId: string | null;
   editingWorkspaceId: string | null; // For inline name editing
   wiring: WiringState;
@@ -31,6 +35,10 @@ interface UIState {
   setStatusMessage: (message: string) => void;
   setCliAvailable: (available: boolean) => void;
   setCursorCliAvailable: (available: boolean) => void;
+  setKiloCliAvailable: (available: boolean) => void;
+  setGeminiCliAvailable: (available: boolean) => void;
+  setGrokCliAvailable: (available: boolean) => void;
+  setDeepseekCliAvailable: (available: boolean) => void;
   showOutputModal: (agentId: string | null) => void;
   setEditingWorkspace: (workspaceId: string | null) => void;
   startWiring: (workspaceId: string, type: 'input' | 'output', x: number, y: number) => void;
@@ -47,6 +55,10 @@ export const useUIStore = create<UIState>()(
     statusMessage: 'Ready',
     cliAvailable: null,
     cursorCliAvailable: null,
+    kiloCliAvailable: null,
+    geminiCliAvailable: null,
+    grokCliAvailable: null,
+    deepseekCliAvailable: null,
     outputModalAgentId: null,
     editingWorkspaceId: null,
     wiring: {
@@ -102,6 +114,30 @@ export const useUIStore = create<UIState>()(
     setCursorCliAvailable: (available: boolean) => {
       set((state) => {
         state.cursorCliAvailable = available;
+      });
+    },
+
+    setKiloCliAvailable: (available: boolean) => {
+      set((state) => {
+        state.kiloCliAvailable = available;
+      });
+    },
+
+    setGeminiCliAvailable: (available: boolean) => {
+      set((state) => {
+        state.geminiCliAvailable = available;
+      });
+    },
+
+    setGrokCliAvailable: (available: boolean) => {
+      set((state) => {
+        state.grokCliAvailable = available;
+      });
+    },
+
+    setDeepseekCliAvailable: (available: boolean) => {
+      set((state) => {
+        state.deepseekCliAvailable = available;
       });
     },
 

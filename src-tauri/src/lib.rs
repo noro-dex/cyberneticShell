@@ -21,6 +21,10 @@ pub fn run() {
             list_agents,
             check_cli_available,
             check_cursor_cli_available,
+            check_kilo_cli_available,
+            check_gemini_cli_available,
+            check_grok_cli_available,
+            check_deepseek_cli_available,
             list_skills,
             get_skill,
         ])

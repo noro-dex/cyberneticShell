@@ -8,24 +8,49 @@ import { useAgentCommands } from './hooks/useAgentCommands';
 import { useUIStore } from './stores/ui';
 
 function App() {
-  const { setCliAvailable, setCursorCliAvailable, setStatusMessage } = useUIStore();
-  const { checkCliAvailable, checkCursorCliAvailable } = useAgentCommands();
+  const { setCliAvailable, setCursorCliAvailable, setKiloCliAvailable, setGeminiCliAvailable, setGrokCliAvailable, setDeepseekCliAvailable, setStatusMessage } = useUIStore();
+  const { checkCliAvailable, checkCursorCliAvailable, checkKiloCliAvailable, checkGeminiCliAvailable, checkGrokCliAvailable, checkDeepseekCliAvailable } = useAgentCommands();
 
   // Set up event listeners
   useTauriEvents();
 
-  // Check if Claude and Cursor CLIs are available on mount
+  // Check if Claude, Cursor, Kilo, Gemini, Grok, and DeepSeek CLIs are available on mount
   useEffect(() => {
     const check = async () => {
       setStatusMessage('Checking CLIs...');
-      const [claude, cursor] = await Promise.all([checkCliAvailable(), checkCursorCliAvailable()]);
+      const [claude, cursor, kilo, gemini, grok, deepseek] = await Promise.all([
+        checkCliAvailable(),
+        checkCursorCliAvailable(),
+        checkKiloCliAvailable(),
+        checkGeminiCliAvailable(),
+        checkGrokCliAvailable(),
+        checkDeepseekCliAvailable(),
+      ]);
       setCliAvailable(claude);
       setCursorCliAvailable(cursor);
-      const which = [claude && 'Claude', cursor && 'Cursor'].filter(Boolean).join(', ') || 'none';
-      setStatusMessage(which !== 'none' ? 'Ready' : 'No CLI found (Claude or Cursor)');
+      setKiloCliAvailable(kilo);
+      setGeminiCliAvailable(gemini);
+      setGrokCliAvailable(grok);
+      setDeepseekCliAvailable(deepseek);
+      const which = [claude && 'Claude', cursor && 'Cursor', kilo && 'Kilo', gemini && 'Gemini', grok && 'Grok', deepseek && 'DeepSeek'].filter(Boolean).join(', ') || 'none';
+      setStatusMessage(which !== 'none' ? 'Ready' : 'No CLI found (Claude, Cursor, Kilo, Gemini, Grok, or DeepSeek)');
     };
     check();
-  }, [checkCliAvailable, checkCursorCliAvailable, setCliAvailable, setCursorCliAvailable, setStatusMessage]);
+  }, [
+    checkCliAvailable,
+    checkCursorCliAvailable,
+    checkKiloCliAvailable,
+    checkGeminiCliAvailable,
+    checkGrokCliAvailable,
+    checkDeepseekCliAvailable,
+    setCliAvailable,
+    setCursorCliAvailable,
+    setKiloCliAvailable,
+    setGeminiCliAvailable,
+    setGrokCliAvailable,
+    setDeepseekCliAvailable,
+    setStatusMessage,
+  ]);
 
   return (
     <div className="h-screen w-screen flex flex-col bg-canvas-bg text-gray-100">

@@ -2,8 +2,8 @@ export type WorkspaceState = 'empty' | 'occupied' | 'working' | 'success' | 'err
 
 export type ModelId = 'claude-sonnet-4-20250514' | 'claude-opus-4-20250514' | 'claude-3-5-haiku-20241022';
 
-/** CLI backend: `claude` or `cursor` (Cursor Agent). */
-export type CliType = 'claude' | 'cursor';
+/** CLI backend: `claude`, `cursor` (Cursor Agent), `kilo` (Kilo Code), `gemini` (Gemini CLI), `grok` (Grok CLI), or `deepseek` (DeepSeek CLI). */
+export type CliType = 'claude' | 'cursor' | 'kilo' | 'gemini' | 'grok' | 'deepseek';
 
 export interface WorkspaceConnection {
   fromId: string;      // Source workspace ID
@@ -24,9 +24,9 @@ export interface Workspace {
   createdAt: number;
   systemPrompt: string | null;
   model: ModelId;
-  /** `claude` (default) or `cursor`. */
+  /** `claude` (default), `cursor`, `kilo`, `gemini`, `grok`, or `deepseek`. */
   cli?: CliType;
-  /** Cursor-only: `agent`, `plan`, or `ask`. */
+  /** Cursor-only: `agent`, `plan`, or `ask`. Ignored for Claude and Kilo. */
   mode?: string;
 
   // Workflow features

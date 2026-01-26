@@ -1,12 +1,12 @@
 [package]
-name = "claude-command-center"
+name = "giga-command-center"
 version = "0.1.0"
-description = "Pixel-art visualization layer for Claude Code"
+description = "Pixel-art visualization layer for agent CLIs"
 authors = ["you"]
 edition = "2021"
 
 [lib]
-name = "claude_command_center_lib"
+name = "giga_command_center_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]

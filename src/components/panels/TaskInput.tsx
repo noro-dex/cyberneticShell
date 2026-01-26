@@ -12,7 +12,7 @@ export function TaskInput() {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const { selectedWorkspaceId, cliAvailable, cursorCliAvailable } = useUIStore();
+  const { selectedWorkspaceId, cliAvailable, cursorCliAvailable, kiloCliAvailable, geminiCliAvailable, grokCliAvailable, deepseekCliAvailable } = useUIStore();
   const workspaces = useWorkspacesStore((s) => s.workspaces);
   const agents = useAgentsStore((s) => s.agents);
   const { skills, loadSkills } = useSkillsStore();
@@ -68,13 +68,27 @@ export function TaskInput() {
   return (
     <div className="p-4 border-t border-canvas-border bg-gray-900/50">
       {selectedWorkspaceId && (() => {
-        const useCursor = workspace?.cli === 'cursor';
-        const ok = useCursor ? cursorCliAvailable : cliAvailable;
-        if (ok !== false || (cliAvailable === null && cursorCliAvailable === null)) return null;
+        const cliType = workspace?.cli ?? 'claude';
+        const useCursor = cliType === 'cursor';
+        const useKilo = cliType === 'kilo';
+        const useGemini = cliType === 'gemini';
+        const useGrok = cliType === 'grok';
+        const useDeepseek = cliType === 'deepseek';
+        const ok = useCursor ? cursorCliAvailable : useKilo ? kiloCliAvailable : useGemini ? geminiCliAvailable : useGrok ? grokCliAvailable : useDeepseek ? deepseekCliAvailable : cliAvailable;
+        if (ok !== false || (cliAvailable === null && cursorCliAvailable === null && kiloCliAvailable === null && geminiCliAvailable === null && grokCliAvailable === null && deepseekCliAvailable === null)) return null;
         return (
           <div className="mb-3 p-3 bg-red-900/30 border border-red-700 rounded text-sm text-red-300">
-            {useCursor ? 'Cursor CLI (agent) not found. ' : 'Claude CLI not found. '}
-            {useCursor ? 'Install: curl https://cursor.com/install -fsS | bash' : 'Install it first.'}
+            {useCursor
+              ? 'Cursor CLI (agent) not found. Install: curl https://cursor.com/install -fsS | bash'
+              : useKilo
+              ? 'Kilo CLI (kilo) not found. Install: npm install -g @kilocode/cli'
+              : useGemini
+              ? 'Gemini CLI (gemini) not found. Install: npm install -g @google/gemini-cli'
+              : useGrok
+              ? 'Grok CLI (grok) not found. Install: bun add -g @vibe-kit/grok-cli or npm install -g @vibe-kit/grok-cli'
+              : useDeepseek
+              ? 'DeepSeek CLI (deepseek) not found. Install: pip install deepseek-cli'
+              : 'Claude CLI not found. Install it first.'}
           </div>
         );
       })()}
@@ -152,7 +166,17 @@ export function TaskInput() {
               disabled={
                 !prompt.trim() ||
                 isSubmitting ||
-                (workspace?.cli === 'cursor' ? !cursorCliAvailable : !cliAvailable)
+                (workspace?.cli === 'cursor'
+                  ? !cursorCliAvailable
+                  : workspace?.cli === 'kilo'
+                  ? !kiloCliAvailable
+                  : workspace?.cli === 'gemini'
+                  ? !geminiCliAvailable
+                  : workspace?.cli === 'grok'
+                  ? !grokCliAvailable
+                  : workspace?.cli === 'deepseek'
+                  ? !deepseekCliAvailable
+                  : !cliAvailable)
               }
               size="sm"
             >

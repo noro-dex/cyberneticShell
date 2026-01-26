@@ -1,7 +1,7 @@
 {
   "$schema": "https://schemas.tauri.app/config/2/capability",
   "identifier": "default",
-  "description": "Default capabilities for Claude Command Center",
+  "description": "Default capabilities for Giga Factory Command Center",
   "windows": ["main"],
   "permissions": [
     "core:default",

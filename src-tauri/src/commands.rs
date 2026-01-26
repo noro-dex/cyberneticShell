@@ -87,6 +87,55 @@ pub fn check_cursor_cli_available() -> Result<bool, String> {
     }
 }
 
+/// Check if the Kilo CLI (`kilo` or `kilocode`) is available.
+/// Install: npm install -g @kilocode/cli
+#[tauri::command]
+pub fn check_kilo_cli_available() -> Result<bool, String> {
+    // Try `kilo` first, then `kilocode` as fallback
+    let kilo_check = Command::new("kilo").arg("--version").output();
+    if let Ok(output) = kilo_check {
+        if output.status.success() {
+            return Ok(true);
+        }
+    }
+    
+    // Fallback to kilocode
+    match Command::new("kilocode").arg("--version").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(_) => Ok(false),
+    }
+}
+
+/// Check if the Gemini CLI (`gemini`) is available.
+/// Install: npm install -g @google/gemini-cli
+#[tauri::command]
+pub fn check_gemini_cli_available() -> Result<bool, String> {
+    match Command::new("gemini").arg("--version").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(_) => Ok(false),
+    }
+}
+
+/// Check if the Grok CLI (`grok`) is available.
+/// Install: bun add -g @vibe-kit/grok-cli or npm install -g @vibe-kit/grok-cli
+#[tauri::command]
+pub fn check_grok_cli_available() -> Result<bool, String> {
+    match Command::new("grok").arg("--version").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(_) => Ok(false),
+    }
+}
+
+/// Check if the DeepSeek CLI (`deepseek`) is available.
+/// Install: pip install deepseek-cli
+#[tauri::command]
+pub fn check_deepseek_cli_available() -> Result<bool, String> {
+    match Command::new("deepseek").arg("--version").output() {
+        Ok(output) => Ok(output.status.success()),
+        Err(_) => Ok(false),
+    }
+}
+
 #[tauri::command]
 pub fn list_skills() -> Result<Vec<SkillInfo>, String> {
     let home = dirs::home_dir().ok_or("Could not find home directory")?;

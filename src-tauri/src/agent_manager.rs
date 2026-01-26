@@ -60,6 +60,102 @@ fn build_cursor_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
     ("agent", args)
 }
 
+fn build_kilo_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
+    // Kilo CLI: https://github.com/Kilo-Org/kilocode
+    // Binary: `kilo` or `kilocode`
+    // Similar to Claude/Cursor: -p, --model, --output-format
+    let mut args = vec![
+        "-p".to_string(),
+        config.prompt.clone(),
+        "--output-format".to_string(),
+        "stream-json".to_string(),
+    ];
+    if let Some(model) = &config.model {
+        args.push("--model".to_string());
+        args.push(model.clone());
+    }
+    if let Some(sp) = &config.system_prompt {
+        if !sp.is_empty() {
+            args.push("--system-prompt".to_string());
+            args.push(sp.clone());
+        }
+    }
+    ("kilo", args)
+}
+
+fn build_gemini_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
+    // Gemini CLI: https://github.com/google-gemini/gemini-cli
+    // Binary: `gemini`
+    // Similar to other CLIs: -p, -m (for model), --output-format
+    let mut args = vec![
+        "-p".to_string(),
+        config.prompt.clone(),
+        "--output-format".to_string(),
+        "stream-json".to_string(),
+    ];
+    if let Some(model) = &config.model {
+        args.push("-m".to_string());
+        args.push(model.clone());
+    }
+    if let Some(sp) = &config.system_prompt {
+        if !sp.is_empty() {
+            args.push("--system-prompt".to_string());
+            args.push(sp.clone());
+        }
+    }
+    ("gemini", args)
+}
+
+fn build_grok_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
+    // Grok CLI: https://github.com/superagent-ai/grok-cli
+    // Binary: `grok`
+    // Install: bun add -g @vibe-kit/grok-cli or npm install -g @vibe-kit/grok-cli
+    // Headless mode: -p or --prompt, --model
+    // Note: Grok CLI doesn't document --output-format, so we omit it
+    let mut args = vec![
+        "-p".to_string(),
+        config.prompt.clone(),
+    ];
+    if let Some(model) = &config.model {
+        args.push("--model".to_string());
+        args.push(model.clone());
+    }
+    if let Some(sp) = &config.system_prompt {
+        if !sp.is_empty() {
+            args.push("--system-prompt".to_string());
+            args.push(sp.clone());
+        }
+    }
+    ("grok", args)
+}
+
+fn build_deepseek_args(config: &AgentConfig) -> (&'static str, Vec<String>) {
+    // DeepSeek CLI: https://github.com/PierrunoYT/deepseek-cli
+    // Binary: `deepseek`
+    // Install: pip install deepseek-cli
+    // Inline mode: -q or --query for query, -m or --model for model selection
+    // Models: deepseek-chat, deepseek-coder, deepseek-reasoner
+    // Streaming is enabled by default
+    // Note: DeepSeek CLI uses -q for inline queries, not -p
+    // System prompts are prepended to the query since there's no separate flag
+    let mut query = config.prompt.clone();
+    if let Some(sp) = &config.system_prompt {
+        if !sp.is_empty() {
+            query = format!("System: {}\n\nUser: {}", sp, query);
+        }
+    }
+    
+    let mut args = vec![
+        "-q".to_string(),
+        query,
+    ];
+    if let Some(model) = &config.model {
+        args.push("-m".to_string());
+        args.push(model.clone());
+    }
+    ("deepseek", args)
+}
+
 pub struct AgentHandle {
     pub id: AgentId,
     pub workspace_id: WorkspaceId,
@@ -92,6 +188,10 @@ impl AgentManager {
         let (binary, args) = match cli {
             CliType::Claude => build_claude_args(&config),
             CliType::Cursor => build_cursor_args(&config),
+            CliType::Kilo => build_kilo_args(&config),
+            CliType::Gemini => build_gemini_args(&config),
+            CliType::Grok => build_grok_args(&config),
+            CliType::DeepSeek => build_deepseek_args(&config),
         };
 
         let mut cmd = Command::new(binary);

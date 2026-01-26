@@ -46,7 +46,7 @@ export function useAgentCommands() {
     async (
       workspaceId: string,
       prompt: string,
-      options?: { allowedTools?: string[]; useWorkflowInputs?: boolean; cli?: 'claude' | 'cursor'; mode?: string }
+      options?: { allowedTools?: string[]; useWorkflowInputs?: boolean; cli?: 'claude' | 'cursor' | 'kilo' | 'gemini'; mode?: string }
     ) => {
       try {
         // Check if there's an existing agent for this workspace
@@ -194,6 +194,38 @@ export function useAgentCommands() {
     }
   }, []);
 
+  const checkKiloCliAvailable = useCallback(async (): Promise<boolean> => {
+    try {
+      return await invoke<boolean>('check_kilo_cli_available');
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const checkGeminiCliAvailable = useCallback(async (): Promise<boolean> => {
+    try {
+      return await invoke<boolean>('check_gemini_cli_available');
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const checkGrokCliAvailable = useCallback(async (): Promise<boolean> => {
+    try {
+      return await invoke<boolean>('check_grok_cli_available');
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const checkDeepseekCliAvailable = useCallback(async (): Promise<boolean> => {
+    try {
+      return await invoke<boolean>('check_deepseek_cli_available');
+    } catch {
+      return false;
+    }
+  }, []);
+
   return {
     startTask,
     startWorkflowTask,
@@ -201,5 +233,9 @@ export function useAgentCommands() {
     deleteWorkspace,
     checkCliAvailable,
     checkCursorCliAvailable,
+    checkKiloCliAvailable,
+    checkGeminiCliAvailable,
+    checkGrokCliAvailable,
+    checkDeepseekCliAvailable,
   };
 }

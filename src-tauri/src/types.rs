@@ -3,14 +3,22 @@ use serde::{Deserialize, Serialize};
 pub type AgentId = String;
 pub type WorkspaceId = String;
 
-/// CLI backend: Claude (`claude`) or Cursor Agent (`agent`).
+/// CLI backend: Claude (`claude`), Cursor Agent (`agent`), Kilo (`kilo`), Gemini (`gemini`), Grok (`grok`), or DeepSeek (`deepseek`).
 /// See: https://cursor.com/docs/cli/overview
+/// See: https://github.com/Kilo-Org/kilocode
+/// See: https://github.com/google-gemini/gemini-cli
+/// See: https://github.com/superagent-ai/grok-cli
+/// See: https://github.com/PierrunoYT/deepseek-cli
 #[derive(Debug, Clone, Default, Serialize, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum CliType {
     #[default]
     Claude,
     Cursor,
+    Kilo,
+    Gemini,
+    Grok,
+    DeepSeek,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -18,10 +26,10 @@ pub enum CliType {
 pub struct AgentConfig {
     pub workspace_id: WorkspaceId,
     pub prompt: String,
-    /// Which CLI to use: `claude` (default) or `cursor`.
+    /// Which CLI to use: `claude` (default), `cursor`, `kilo`, `gemini`, `grok`, or `deepseek`.
     #[serde(default)]
     pub cli: Option<CliType>,
-    /// Cursor-only: `agent` (default), `plan`, or `ask`. Ignored for Claude.
+    /// Cursor-only: `agent` (default), `plan`, or `ask`. Ignored for Claude and Kilo.
     #[serde(default)]
     pub mode: Option<String>,
     #[serde(default)]

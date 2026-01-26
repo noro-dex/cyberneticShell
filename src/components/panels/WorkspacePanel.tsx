@@ -127,6 +127,10 @@ export function WorkspacePanel() {
         >
           <option value="claude">Claude (claude)</option>
           <option value="cursor">Cursor Agent (agent)</option>
+          <option value="kilo">Kilo Code (kilo)</option>
+          <option value="gemini">Gemini CLI (gemini)</option>
+          <option value="grok">Grok CLI (grok)</option>
+          <option value="deepseek">DeepSeek CLI (deepseek)</option>
         </select>
       </div>
 

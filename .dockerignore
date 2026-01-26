@@ -1,0 +1,46 @@
+# Dependencies
+node_modules/
+target/
+dist/
+
+# Build artifacts
+*.log
+*.lock
+.cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Scripts (keep build scripts)
+scripts/
+
+# Test files
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Tauri generated files (will be built in container)
+src-tauri/gen/
